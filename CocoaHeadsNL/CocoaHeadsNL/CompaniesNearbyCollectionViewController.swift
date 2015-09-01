@@ -1,5 +1,5 @@
 //
-//  CompaniesViewController.swift
+//  CompaniesNearbyViewController.swift
 //  CocoaHeadsNL
 //
 //  Created by Bart Hoffman on 10/03/15.
@@ -8,34 +8,43 @@
 
 import Foundation
 
-class CompaniesViewController: PFQueryCollectionViewController, UICollectionViewDelegateFlowLayout {
+class CompaniesNearbyCollectionViewController: PFQueryCollectionViewController, UICollectionViewDelegateFlowLayout {
     
+    var geoPoint:PFGeoPoint?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.collectionView?.registerClass(CompanyCollectionViewCell.self, forCellWithReuseIdentifier: "companyCollectionViewCell")
-    }
-    
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
+        self.collectionView?.registerClass(CompaniesNearbyCollectionViewCell.self, forCellWithReuseIdentifier: "companiesNearbyCollectionViewCell")
 
         if let layout = collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: 145, height: 100)
-            let screenwidth = view.frame.width
-            let numberOfCells = floor(screenwidth / layout.itemSize.width)
-            let inset = floor((screenwidth - numberOfCells * layout.itemSize.width) / (numberOfCells + 1))
-            layout.sectionInset = UIEdgeInsets(top: 10.0, left: inset, bottom: 10.0, right: inset)
-            layout.minimumInteritemSpacing = inset
+            layout.itemSize = CGSize(width: 100, height: 80)
+            layout.sectionInset = UIEdgeInsetsZero
+            layout.minimumInteritemSpacing = 4
         }
         
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "locationAvailable:", name: "LOCATION_AVAILABLE", object: nil)
+    }
+    
+
+    func locationAvailable(notification:NSNotification) -> Void {
+        
+            let userInfo = notification.userInfo as! Dictionary<String,CLLocation>
+            
+            println("CoreLocationManager:  Location available \(userInfo)")
+        
+            geoPoint = PFGeoPoint(location: userInfo["location"])
+        
+            self.loadObjects()
+            self.collectionView?.reloadData()
     }
     
     
     //MARK: - UICollectionViewDataSource methods
-
+    
     override func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath, object: PFObject?) -> PFCollectionViewCell {
         
-        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("companyCollectionViewCell", forIndexPath: indexPath) as! CompanyCollectionViewCell
+        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("companiesNearbyCollectionViewCell", forIndexPath: indexPath) as! CompaniesNearbyCollectionViewCell
         
         if let company = object as? Company {
             cell.updateFromObject(company)
@@ -65,11 +74,16 @@ class CompaniesViewController: PFQueryCollectionViewController, UICollectionView
         }
     }
     
-    //MARK: -Query
+    //MARK: - Query
     
     override func queryForCollection() -> PFQuery {
         let query = Company.query()
-        return query!.orderByAscending("place")
+        
+        if let coordinates = geoPoint {
+            query!.whereKey("location", nearGeoPoint: coordinates, withinKilometers: 15.00)
+                return query!
+        } else {
+             return query!.orderByAscending("place")
+        }
     }
-
 }
