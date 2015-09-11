@@ -10,6 +10,16 @@ import Foundation
 
 class CompanyHighLightCollectionViewCell: PFCollectionViewCell {
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        let imageView = self.imageView
+        
+        if imageView.frame != CGRectZero {
+            imageView.contentMode = .ScaleAspectFit
+        }
+    }
+    
     override func updateFromObject(object: PFObject?) {
         
         if let company = object as? Company {
@@ -23,12 +33,6 @@ class CompanyHighLightCollectionViewCell: PFCollectionViewCell {
                     self?.setNeedsLayout()
                     return nil
                     })
-            }
-            
-            if let place = company.place {
-                textLabel.text = place
-                textLabel.font = UIFont.systemFontOfSize(12)
-                textLabel.textAlignment = .Center
             }
         }
     }
