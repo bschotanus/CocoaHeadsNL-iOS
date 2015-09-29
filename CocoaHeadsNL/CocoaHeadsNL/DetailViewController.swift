@@ -14,7 +14,7 @@ extension UIResponder {
     }
 }
 
-class DetailViewController: UITableViewController {
+class DetailViewController: UITableViewController, SKStoreProductViewControllerDelegate {
     var dataSource: DetailDataSource!
 
     required init?(coder aDecoder: NSCoder) {
@@ -37,6 +37,10 @@ class DetailViewController: UITableViewController {
             self.tableView.delegate = dataSource
             self.navigationItem.title = dataSource.title
         }
+        
+        if let data = dataSource as? CompanyDataSource {
+            data.presenter = self
+        }
 
         self.tableView.reloadData()
     }
@@ -48,9 +52,29 @@ class DetailViewController: UITableViewController {
             }
         }
     }
-
+        
     override func reloadCell(cell: UITableViewCell) {
         tableView.beginUpdates()
         tableView.endUpdates()
+    }
+    
+    func showStoreView(parameters : [String : AnyObject], indexPath : NSIndexPath) {
+        
+        let storeViewController = SKStoreProductViewController()
+        storeViewController.delegate = self
+        
+        storeViewController.loadProductWithParameters(parameters,
+            completionBlock: {result, error in
+                if result {
+                    self.presentViewController(storeViewController,
+                        animated: true, completion: nil)
+                    self.tableView.deselectRowAtIndexPath(indexPath, animated: true)
+                }
+        })
+    }
+    
+    func productViewControllerDidFinish(viewController:
+        SKStoreProductViewController) {
+            self.dismissViewControllerAnimated(true, completion: nil)
     }
 }
